@@ -4,7 +4,7 @@ import streamlit as st
 HF_TOKEN = st.secrets["HF_TOKEN"]
 
 def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
-   prompt = f"""
+    prompt = f"""
 Ты — AI-коммуникатор спроса. Получаешь событие и генерируешь краткие рекомендации для логистики, складов и маркетинга. Не объясняй, кто ты — сразу переходи к делу.
 
 Формат ответа:
