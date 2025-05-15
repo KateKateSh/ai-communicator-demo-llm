@@ -1,5 +1,6 @@
 import requests
 import streamlit as st
+from bot import send_to_all_subscribers  # импорт из bot.py
 
 HF_TOKEN = st.secrets["HF_TOKEN"]
 
@@ -70,7 +71,9 @@ def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
         response.raise_for_status()
         result = response.json()
         if isinstance(result, list) and "generated_text" in result[0]:
-            return clean_response(result[0]["generated_text"])
+            final_output = clean_response(result[0]["generated_text"])
+            send_to_all_subscribers(final_output)  # push в Telegram
+            return final_output                    # отображение в Streamlit
         return "[⚠️ Ответ не содержит текста]"
     except Exception as e:
         return f"[❌ Ошибка LLM: {str(e)}]"
