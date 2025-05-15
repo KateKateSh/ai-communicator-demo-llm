@@ -48,10 +48,9 @@ def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
 🧠 Почему:
 Снег + праздник создают пиковый спрос и логистические риски. Нужно подготовиться заранее.
 
----
+[СТОП ПРИМЕР]
 
 Событие: {event}
-
 Ответ:
 """
 
@@ -77,5 +76,7 @@ def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
         return f"[❌ Ошибка LLM: {str(e)}]"
 
 def clean_response(raw_text):
+    if "[СТОП ПРИМЕР]" in raw_text:
+        raw_text = raw_text.split("[СТОП ПРИМЕР]")[-1]
     start = raw_text.find("📌 Прогноз:")
-    return raw_text[start:] if start != -1 else raw_text
+    return raw_text[start:].strip() if start != -1 else raw_text.strip()
