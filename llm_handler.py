@@ -65,3 +65,4 @@ def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
         return "[⚠️ Ответ не содержит текста]"
     except Exception as e:
         return f"[❌ Ошибка LLM: {str(e)}]"
+
