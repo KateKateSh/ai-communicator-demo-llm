@@ -21,8 +21,8 @@ def ai_response_with_llm(event_text: str) -> str:
     return result
 
 # Streamlit UI
-st.set_page_config(page_title="AI-коммуникатор спроса", layout="centered")
-st.title("🤖 AI-коммуникатор спроса")
+st.set_page_config(page_title="AI-коммуникатор спросa. LLM demo", layout="centered")
+st.title("🤖 AI-коммуникатор спроса. LLM demo")
 
 event_text = st.text_area("Введите событие", placeholder="Пример: 14 февраля в Москве снег + акция на цветы")
 
