@@ -89,6 +89,8 @@ def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
 def clean_response(raw_text):
     if "[СТОП ПРИМЕР]" in raw_text:
         raw_text = raw_text.split("[СТОП ПРИМЕР]")[-1]
+    if "[СТОП СТРУКТУРИРОВАННЫЙ ОТВЕТ]" in raw_text:
+        raw_text = raw_text.split("[СТОП СТРУКТУРИРОВАННЫЙ ОТВЕТ]")[0]
     if "<<END>>" in raw_text:
         raw_text = raw_text.split("<<END>>")[0]
     start = raw_text.find("📌 Прогноз:")
