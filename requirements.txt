@@ -2,4 +2,5 @@ streamlit
 transformers
 torch
 sentencepiece
-python-telegram-bot
+python-telegram-bot==13.15
+requests
