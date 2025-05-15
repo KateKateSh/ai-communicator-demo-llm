@@ -64,7 +64,9 @@ def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
 
 Событие: {event}
 Ответ:
+<<END>>
 """
+
     url = f"https://api-inference.huggingface.co/models/{model}"
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     payload = {
@@ -91,5 +93,8 @@ def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
 def clean_response(raw_text):
     if "[СТОП ПРИМЕР]" in raw_text:
         raw_text = raw_text.split("[СТОП ПРИМЕР]")[-1]
+    if "<<END>>" in raw_text:
+        raw_text = raw_text.split("<<END>>")[0]
     start = raw_text.find("📌 Прогноз:")
     return raw_text[start:].strip() if start != -1 else raw_text.strip()
+    
