@@ -1,35 +1,26 @@
 import streamlit as st
-import json
-from pathlib import Path
-from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
+from llm_handler import query_huggingface
 
-# Путь к prompt-шаблону
-PROMPT_PATH = Path("prompts/event_template.txt")
+# Настройка страницы
+st.set_page_config(page_title="AI-коммуникатор спроса", page_icon="🤖")
+st.title("🤖 AI-коммуникатор спроса")
+st.caption("LLM-помощник для событийного прогнозирования спроса в логистике и маркетинге")
 
-@st.cache_resource
-def load_model():
-    tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
-    model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-small")
-    return pipeline("text2text-generation", model=model, tokenizer=tokenizer)
+# Инпут от пользователя
+user_input = st.text_input(
+    "Введите событие для анализа",
+    placeholder="Например: Концерт Imagine Dragons в Лужниках + жара"
+)
 
-llm_pipeline = load_model()
+# Кнопка генерации
+if st.button("Сгенерировать рекомендации") and user_input:
+    with st.spinner("⏳ Анализируем событие..."):
+        output = query_huggingface(user_input)
+    
+    # Вывод в формате markdown
+    st.markdown("### 📌 Ответ от AI:")
+    st.markdown(output)
 
-def ai_response_with_llm(event_text: str) -> str:
-    prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
-    input_text = f"{prompt_template}\n\nСобытие: {event_text}"
-    result = llm_pipeline(input_text, max_new_tokens=256)[0]["generated_text"]
-    return result
-
-# Streamlit UI
-st.set_page_config(page_title="AI-коммуникатор спросa. LLM demo", layout="centered")
-st.title("🤖 AI-коммуникатор спроса. LLM demo")
-
-event_text = st.text_area("Введите событие", placeholder="Пример: 14 февраля в Москве снег + акция на цветы")
-
-if st.button("Проанализировать"):
-    if not event_text.strip():
-        st.warning("Пожалуйста, введите описание события.")
-    else:
-        st.markdown("⏳ Анализируем...")
-        result = ai_response_with_llm(event_text)
-        st.markdown(result)
+# Подвал
+st.markdown("---")
+st.caption("v1.0 · Демонстрация AI-решения на основе Hugging Face · by Kate")
