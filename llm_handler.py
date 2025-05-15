@@ -3,6 +3,7 @@ import streamlit as st
 
 HF_TOKEN = st.secrets["HF_TOKEN"]
 TG_TOKEN = st.secrets["TG_TOKEN"]
+api_key = st.secrets["api_key"]
 SUBSCRIBERS_FILE = "subscribers.txt"
 
 def send_to_all_subscribers(text):
