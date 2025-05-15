@@ -1,8 +1,28 @@
 import requests
 import streamlit as st
-from bot import send_to_all_subscribers  # импорт из bot.py
 
 HF_TOKEN = st.secrets["HF_TOKEN"]
+TG_TOKEN = st.secrets["TG_TOKEN"]
+SUBSCRIBERS_FILE = "subscribers.txt"
+
+def send_to_all_subscribers(text):
+    try:
+        with open(SUBSCRIBERS_FILE, "r") as f:
+            chat_ids = [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        chat_ids = []
+
+    for chat_id in chat_ids:
+        try:
+            payload = {
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "Markdown"
+            }
+            url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
+            requests.post(url, json=payload, timeout=10)
+        except Exception as e:
+            print(f"Ошибка отправки в {chat_id}: {e}")
 
 def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
     prompt = f"""
@@ -72,8 +92,8 @@ def query_huggingface(event, model="HuggingFaceH4/zephyr-7b-beta"):
         result = response.json()
         if isinstance(result, list) and "generated_text" in result[0]:
             final_output = clean_response(result[0]["generated_text"])
-            send_to_all_subscribers(final_output)  # push в Telegram
-            return final_output                    # отображение в Streamlit
+            send_to_all_subscribers(final_output)
+            return final_output
         return "[⚠️ Ответ не содержит текста]"
     except Exception as e:
         return f"[❌ Ошибка LLM: {str(e)}]"
