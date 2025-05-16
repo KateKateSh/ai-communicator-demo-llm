@@ -1,34 +1,11 @@
 import requests
 import streamlit as st
 
-TG_TOKEN = st.secrets["TG_TOKEN"]
-TOGETHER_API_KEY = st.secrets["together"]["api_key"]
-SUBSCRIBERS_FILE = "subscribers.txt"
-
-def send_to_all_subscribers(text):
-    try:
-        with open(SUBSCRIBERS_FILE, "r") as f:
-            chat_ids = [line.strip() for line in f if line.strip()]
-    except FileNotFoundError:
-        chat_ids = []
-
-    for chat_id in chat_ids:
-        try:
-            payload = {
-                "chat_id": chat_id,
-                "text": text,
-                "parse_mode": "Markdown"
-            }
-            url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
-            requests.post(url, json=payload, timeout=10)
-        except Exception as e:
-            print(f"Ошибка отправки в {chat_id}: {e}")
-
-def query_together_ai(event, model="deepseek-ai/deepseek-llm-7b-chat"):
+def query_llm(event, provider="together", model="meta-llama/Llama-3-8b-chat-hf"):
     prompt = f"""
 Ты — AI-коммуникатор спроса для логистики и e-commerce. Твоя задача — анализировать событие и чётко предлагать действия.
 
-⚠️ ВАЖНО: не выходи за формат. Не повторяй инструкции. Только деловой, краткий и структурированный ответ.
+⚠️ ВАЖНО: не выходи за формат. Не повторяй инструкции. Не пиши примеры. Только деловой, краткий и структурированный ответ.
 
 📌 Формат:
 📌 Прогноз: ...
@@ -42,36 +19,40 @@ def query_together_ai(event, model="deepseek-ai/deepseek-llm-7b-chat"):
 
 Событие: {event}
 Ответ:
-"""
+""":contentReference[oaicite:45]{index=45}
 
     headers = {
-        "Authorization": f"Bearer {TOGETHER_API_KEY}",
         "Content-Type": "application/json"
     }
-    url = "https://api.together.xyz/inference"
+
+    if provider == "together":
+        api_key = st.secrets["together"]["api_key"]
+        headers["Authorization"] = f"Bearer {api_key}"
+        url = "https://api.together.xyz/v1/chat/completions"
+    elif provider == "deepseek":
+        api_key = st.secrets["deepseek"]["api_key"]
+        headers["Authorization"] = f"Bearer {api_key}"
+        url = "https://api.deepseek.com/v1/chat/completions"
+    else:
+        return "❌ Неверный провайдер LLM."
 
     payload = {
         "model": model,
-        "max_tokens": 512,
-        "temperature": 0.7,
-        "top_p": 0.9,
-        "repetition_penalty": 1.1,
-        "prompt": prompt
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.6,
+        "top_p": 0.85,
+        "stream": False
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
         response.raise_for_status()
         result = response.json()
-        generated_text = result.get("output", "").strip()
-        if generated_text:
-            final_output = clean_response(generated_text)
-            send_to_all_subscribers(final_output)
-            return final_output
-        return "[⚠️ Ответ не получен]"
+        if "choices" in result and len(result["choices"]) > 0:
+            return result["choices"][0]["message"]["content"]
+        else:
+            return "⚠️ Ответ не содержит текста."
     except Exception as e:
-        return f"[❌ Ошибка LLM: {str(e)}]"
-
-def clean_response(raw_text):
-    start = raw_text.find("📌 Прогноз:")
-    return raw_text[start:].strip() if start != -1 else raw_text.strip()
+        return f"❌ Ошибка LLM: {str(e)}"
