@@ -19,7 +19,7 @@ def query_llm(event, provider="together", model="meta-llama/Llama-3-8b-chat-hf")
 
 Событие: {event}
 Ответ:
-""":contentReference[oaicite:45]{index=45}
+"""
 
     headers = {
         "Content-Type": "application/json"
