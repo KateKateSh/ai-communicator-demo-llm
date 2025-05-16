@@ -24,7 +24,19 @@ def send_to_all_subscribers(text):
             print(f"Ошибка отправки в {chat_id}: {e}")
 
 def query_llm(event, provider="together", model="meta-llama/Llama-3-8b-chat-hf"):
-    prompt = f"""..."""  # остаётся без изменений
+    system_prompt = (
+        "Ты — AI-коммуникатор спроса для логистики и e-commerce. "
+        "Твоя задача — анализировать событие и чётко предлагать действия. "
+        "Формат ответа: 📌 Прогноз, ✅ Действия, 👥 Роли, 🧠 Почему. "
+        "Отвечай строго по структуре. Не добавляй вводных слов."
+    )
+
+    user_prompt = f"Событие: {event}\nОтвет:"
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
 
     headers = {"Content-Type": "application/json"}
 
@@ -41,7 +53,7 @@ def query_llm(event, provider="together", model="meta-llama/Llama-3-8b-chat-hf")
 
     payload = {
         "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": messages,
         "temperature": 0.6,
         "top_p": 0.85,
         "stream": False
@@ -52,10 +64,9 @@ def query_llm(event, provider="together", model="meta-llama/Llama-3-8b-chat-hf")
         response.raise_for_status()
         result = response.json()
         if "choices" in result and len(result["choices"]) > 0:
-            reply = result["choices"][0]["message"]["content"]
-            send_to_all_subscribers(reply)  # <-- отправка в Telegram
-            return reply
-        else:
-            return "⚠️ Ответ не содержит текста."
+            final_output = result["choices"][0]["message"]["content"]
+            send_to_all_subscribers(final_output)
+            return final_output
+        return "⚠️ Ответ не содержит текста."
     except Exception as e:
         return f"❌ Ошибка LLM: {str(e)}"
