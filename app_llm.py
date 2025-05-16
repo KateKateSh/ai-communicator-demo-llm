@@ -21,11 +21,10 @@ model = st.text_input("Название модели", value=default_model)
 if st.button("Сгенерировать рекомендации") and user_input:
     with st.spinner("⏳ AI думает..."):
         output = query_llm(user_input, provider=provider, model=model)
-    
-    # Вывод результата
+
     st.markdown("### 📌 Ответ от AI:")
     st.markdown(output)
 
 # Подвал
 st.markdown("---")
-st.caption("v1.1 · Демонстрация AI-решения через Together или DeepSeek · by Kate")
+st.caption("v1.2 · Отправка ответа в Telegram · by Kate")
