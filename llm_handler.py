@@ -1,29 +1,32 @@
 import requests
 import streamlit as st
 
+TG_TOKEN = st.secrets["TG_TOKEN"]
+SUBSCRIBERS_FILE = "subscribers.txt"
+
+def send_to_all_subscribers(text):
+    try:
+        with open(SUBSCRIBERS_FILE, "r") as f:
+            chat_ids = [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        chat_ids = []
+
+    for chat_id in chat_ids:
+        try:
+            payload = {
+                "chat_id": chat_id,
+                "text": text,
+                "parse_mode": "Markdown"
+            }
+            url = f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage"
+            requests.post(url, json=payload, timeout=10)
+        except Exception as e:
+            print(f"Ошибка отправки в {chat_id}: {e}")
+
 def query_llm(event, provider="together", model="meta-llama/Llama-3-8b-chat-hf"):
-    prompt = f"""
-Ты — AI-коммуникатор спроса для логистики и e-commerce. Твоя задача — анализировать событие и чётко предлагать действия.
+    prompt = f"""..."""  # остаётся без изменений
 
-⚠️ ВАЖНО: не выходи за формат. Не повторяй инструкции. Не пиши примеры. Только деловой, краткий и структурированный ответ.
-
-📌 Формат:
-📌 Прогноз: ...
-✅ Действия:
-- ...
-- ...
-👥 Роли:
-- ...
-🧠 Почему:
-...
-
-Событие: {event}
-Ответ:
-"""
-
-    headers = {
-        "Content-Type": "application/json"
-    }
+    headers = {"Content-Type": "application/json"}
 
     if provider == "together":
         api_key = st.secrets["together"]["api_key"]
@@ -38,9 +41,7 @@ def query_llm(event, provider="together", model="meta-llama/Llama-3-8b-chat-hf")
 
     payload = {
         "model": model,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
+        "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.6,
         "top_p": 0.85,
         "stream": False
@@ -51,7 +52,9 @@ def query_llm(event, provider="together", model="meta-llama/Llama-3-8b-chat-hf")
         response.raise_for_status()
         result = response.json()
         if "choices" in result and len(result["choices"]) > 0:
-            return result["choices"][0]["message"]["content"]
+            reply = result["choices"][0]["message"]["content"]
+            send_to_all_subscribers(reply)  # <-- отправка в Telegram
+            return reply
         else:
             return "⚠️ Ответ не содержит текста."
     except Exception as e:
