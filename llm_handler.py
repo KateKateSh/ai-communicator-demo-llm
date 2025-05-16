@@ -1,15 +1,9 @@
-import openai
-import streamlit as st
 import requests
+import streamlit as st
 
-# Конфигурация
 TG_TOKEN = st.secrets["TG_TOKEN"]
 TOGETHER_API_KEY = st.secrets["together"]["api_key"]
 SUBSCRIBERS_FILE = "subscribers.txt"
-
-# Установка API-параметров
-openai.api_key = TOGETHER_API_KEY
-openai.api_base = "https://api.together.xyz/v1"
 
 def send_to_all_subscribers(text):
     try:
@@ -30,11 +24,11 @@ def send_to_all_subscribers(text):
         except Exception as e:
             print(f"Ошибка отправки в {chat_id}: {e}")
 
-def query_together_ai(event, model="deepseek-chat"):
+def query_together_ai(event, model="deepseek-ai/deepseek-llm-7b-chat"):
     prompt = f"""
 Ты — AI-коммуникатор спроса для логистики и e-commerce. Твоя задача — анализировать событие и чётко предлагать действия.
 
-⚠️ ВАЖНО: не выходи за формат. Не повторяй инструкции. Не пиши примеры. Только деловой, краткий и структурированный ответ.
+⚠️ ВАЖНО: не выходи за формат. Не повторяй инструкции. Только деловой, краткий и структурированный ответ.
 
 📌 Формат:
 📌 Прогноз: ...
@@ -50,15 +44,34 @@ def query_together_ai(event, model="deepseek-chat"):
 Ответ:
 """
 
+    headers = {
+        "Authorization": f"Bearer {TOGETHER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    url = "https://api.together.xyz/inference"
+
+    payload = {
+        "model": model,
+        "max_tokens": 512,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "repetition_penalty": 1.1,
+        "prompt": prompt
+    }
+
     try:
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=512
-        )
-        result = response.choices[0].message.content.strip()
-        send_to_all_subscribers(result)
-        return result
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response.raise_for_status()
+        result = response.json()
+        generated_text = result.get("output", "").strip()
+        if generated_text:
+            final_output = clean_response(generated_text)
+            send_to_all_subscribers(final_output)
+            return final_output
+        return "[⚠️ Ответ не получен]"
     except Exception as e:
         return f"[❌ Ошибка LLM: {str(e)}]"
+
+def clean_response(raw_text):
+    start = raw_text.find("📌 Прогноз:")
+    return raw_text[start:].strip() if start != -1 else raw_text.strip()
